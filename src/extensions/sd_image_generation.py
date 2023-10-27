@@ -11,7 +11,6 @@ from utils import JsonManager
 from utils.response_embed import *
 
 import requests
-from copy import deepcopy
 import io
 import base64
 
@@ -66,17 +65,13 @@ class SD_Image_Generation(commands.Cog):
         loras = ""
         response = requests.get(url=f"{URL}/sdapi/v1/loras").json()
         for lora in response:
-            print(lora['metadata']['ss_tag_frequency'])
-            loras += f"<lora:{lora['alias']}:1.0>"
-            try:
-                loras +=f" {list(lora['metadata']['ss_tag_frequency'])[0]}\n"
-            except KeyError:
-                loras += "\n"
+            print(lora.keys())
+            loras += f"<lora:{lora['name']}:1.0>\n"
 
         await ctx.reply(embed = allowEmbed("Lista de LORAs:", loras))
 
     @commands.command()
-    async def sdcommands(self, ctx: Context):
+    async def presets(self, ctx: Context):
         presets = JsonManager.get(ctx.guild.id, "sd_presets")
         sdcommand = ""
         for command in presets.keys():
@@ -95,7 +90,6 @@ class SD_Image_Generation(commands.Cog):
         for preset in presets.keys():
             if preset in msg.content:
                 to_use_preset = presets[preset]
-                msg.content.replace(preset, "", 1)
                 break
 
         if to_use_preset == None:
@@ -103,16 +97,38 @@ class SD_Image_Generation(commands.Cog):
 
         size_x = 512
         size_y = 512
-        if "--s" in msg.content:
-            prompt = msg.content.split("--s")[0].replace("k!", "")
+        print(msg.content.split("--"))
 
-            if 400 <= int(msg.content.split("--s")[1].split()[0]) <= 1536:
-                size_x = int(msg.content.split("--s")[1].split()[0])
+        if "--" in msg.content:
+            args = msg.content.split("--")
+            prompt = args[0].replace(f"k!{preset}", "")
+            args.pop(0)
 
-            if 400 <= int(msg.content.split("--s")[1].split()[1]) <= 1536:
-                size_y = int(msg.content.split("--s")[1].split()[1])
+            for arg in args:
+                arg = arg.split()
+
+                ### SIZE
+                if arg[0] == "s":
+                    if 400 <= int(arg[1]) <= 1536:
+                        size_x = int(arg[1])
+
+                    if 400 <= int(arg[1]) <= 1536:
+                        size_y = int(arg[2])
+
+                ### Negative Prompt
+                if arg[0] == "n":
+                    arg.pop(0)
+                    to_use_preset["negative_prompt"] = "".join(i + " " for i in arg)
+
+                ### CFG
+                if arg[0] == "cfg":
+                    to_use_preset["cfg_scale"] = int(arg[1])
+
+                ### SEED
+                if arg[0] == "seed":
+                    to_use_preset["seed"] = int(arg[1])
         else:
-            prompt = msg.content.replace("k!", "")
+            prompt = msg.content.replace(f"k!{preset}", "")
 
         requests.post(f"{URL}/sdapi/v1/options", json={"sd_model_checkpoint": to_use_preset["model"]})
         to_use_preset["prompt"] = prompt
