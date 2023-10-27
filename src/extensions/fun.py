@@ -12,7 +12,9 @@ class Fun(commands.Cog):
         self.bot = bot
 
     @commands.command()
+    @commands.has_permissions(administrator=True)
     async def owofy(self, ctx: Context):
+        """
         if ctx.message.reference:
             message = await ctx.channel.fetch_message(ctx.message.reference.message_id)
             message = message.content
@@ -27,6 +29,8 @@ class Fun(commands.Cog):
         )
 
         await ctx.send(response["choices"][0]["text"])
+        """
+        await ctx.message.delete()
 
 
 async def setup(bot):

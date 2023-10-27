@@ -6,7 +6,7 @@ class TestExtension(commands.Cog):
         self.bot = bot
 
     @commands.command()
-    async def ping(self, ctx: Context):
+    async def pinga(self, ctx: Context):
         await ctx.reply("Ping!")
 
 async def setup(bot):
